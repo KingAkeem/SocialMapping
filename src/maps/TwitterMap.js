@@ -1,47 +1,30 @@
-import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Popup, Marker, useMap } from 'react-leaflet';
-import { TextField } from '@mui/material';
+import React, { useState } from 'react';
+import { MapContainer, TileLayer, MapConsumer, Popup, Marker } from 'react-leaflet';
+import { Divider, IconButton, TextField } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
+import { Cancel } from '@mui/icons-material';
 import { useAsync } from 'react-async';
 import './Maps.css'
 
-async function getTweets(city, distance) {
+async function getTweets(city, distance, signal) {
 	/**
 	 * Add validation for city (validate city actually exists and is a valid string type)
 	 * Add validation for distance (validate distance is actually a positive number within a reasonable limit)
 	 */
-	console.log(distance)
-	const response = await fetch(`http://localhost:5000/search/tweets?city=${city}&distance=${distance}`);
-	return response.json();
+	const response = await fetch(`http://localhost:5000/search/tweets?city=${city}&distance=${distance}`, { signal });
+	return await response.json();
 }
 
 function TweetRenderer(props) {
-	const map = useMap();
-	const hasValidOrigin = props.origin.hasOwnProperty('latitude') && props.origin.hasOwnProperty('longitude');
-	useEffect(() => {
-		if (hasValidOrigin) {
-			map.flyTo([props.origin['latitude'], props.origin['longitude']]);
-		}
-	}, [map, props.origin, hasValidOrigin]);
-
 	return (
 		<>
-			{hasValidOrigin && 
-				<Marker position={[props.origin['latitude'], props.origin['longitude']]}>
-					<Popup>
-						Origin of {props.city}
-					</Popup>
-				</Marker>
-			}
 			{props.tweets.length && props.tweets.filter(tweet => tweet.place && tweet.place.coordinates && tweet.place.coordinates.length === 2).map((tweet, index) => {
 				return (
 					<Marker key={index} position={tweet.place.coordinates}>
 						<Popup>
-							<b>Username:</b> {tweet.username}
-							<br/>
-							<b>Name:</b> {tweet.name}
-							<br/>
-							<b>Tweet:</b> {tweet.tweet}
+							{Object.keys(tweet).filter(key => typeof tweet[key] === 'string').map(key => {
+								return  ( <> <b>{key.toUpperCase()}</b> {tweet[key]} <br/> </>);
+							})}
 						</Popup>
 					</Marker>
 				);
@@ -50,35 +33,83 @@ function TweetRenderer(props) {
 	)
 }
 
-function TwitterMap(props) {
-	const [city, setCity] = useState(props.city); 
-	const [distance, setDistance] = useState(props.distance);
-	const [origin, setOrigin] = useState({});
-	const [tweets, setTweets] = useState([]);
+function TweetSearch(props)  {
 
-	const { run, isPending } = useAsync({
-		deferFn: ([city, distance]) => getTweets(city, distance),
+	const [address, setAddress] = useState(props.address); 
+	const [addressErr, setAddressErr] = useState("");
+
+	const [distance, setDistance] = useState(props.distance);
+
+	const { run: search, isPending, cancel } = useAsync({
+		deferFn: ([city, distance], {signal}) => getTweets(city, distance, signal),
 		onResolve: (tweetResponse) => {
 			const {origin, tweets} = tweetResponse;
-			setOrigin(origin);
-			setTweets(tweets);
+			setAddressErr("");
+			props.onSearch({ origin, tweets });
 			
 		},
+		onReject: (error) => {
+			setAddressErr("Invalid address found.");
+		}
 	});
 
+	const handleSearch = () => {
+		if (isDistanceValid(distance)) return;
+		search(address, distance);
+	};
+
+	return (
+		<>
+			<TextField
+				label='Address'
+				error={addressErr !== ""}
+				helperText={addressErr}
+				onChange={(event) => setAddress(event.target.value)}
+			/>
+			<TextField
+				label='Distance (in miles)'
+				type='number'
+				error={isDistanceValid(distance)}
+				helperText={isDistanceValid(distance) ? "Distance must be a positive float." : ""}
+				onChange={(event) => setDistance(event.target.value)}
+			/>
+			<Divider orientation="vertical"/>
+			<LoadingButton onClick={handleSearch} loading={isPending} loadingIndicator='Searching...'>Search</LoadingButton>
+			{isPending && <IconButton onClick={() => cancel()}><Cancel/></IconButton>}
+		</>
+	);
+}
+const isDistanceValid = distance =>isNaN(parseFloat(distance)) || parseFloat(distance) < 0;
+
+function TwitterMap(props) {
+	const [tweets, setTweets] = useState([]);
+	const [origin, setOrigin] = useState({});
 
 	return (
 		<div id='mapcontainer'>
+			<TweetSearch
+				address={props.address}
+				distance={props.distance}
+				onSearch={({origin, tweets})  => {
+					setTweets(tweets);
+					setOrigin(origin);
+				}}
+			/>
 			<br/>
-			<TextField label='City' onChange={(event) => setCity(event.target.value)}/>
-			<TextField type='number' label='Distance' onChange={(event) => setDistance(event.target.value)}/>
-			<LoadingButton onClick={() => run(city, distance)} loading={isPending} loadingIndicator='Searching...'>Search</LoadingButton>
 			<MapContainer center={[51, 2]} zoom={12}>
 				<TileLayer
 					attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
 					url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
 				/>
-				<TweetRenderer city={city} origin={origin} tweets={tweets}/>
+				<MapConsumer>
+					{(map) => {
+						if (origin.hasOwnProperty('latitude') && origin.hasOwnProperty('longitude')) {
+							map.flyTo([origin['latitude'], origin['longitude']]);
+						}
+						return null;
+					}}
+				</MapConsumer>
+				<TweetRenderer tweets={tweets}/>
 			</MapContainer>
 		</div>
 	);
