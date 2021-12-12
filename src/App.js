@@ -11,17 +11,17 @@ function App() {
     <div className="App">
       <Drawer open={menuOpen} variant="persistent">
         <List>
-					<ListSubheader inset={true}>
+          <ListSubheader inset={true}>
             Main Menu <IconButton onClick={() => setMenuOpen(false)}><Close/></IconButton>
           </ListSubheader>
-					<ListItem>
-						<ListItemButton selected={true}>
-							<ListItemIcon>
-								<Public/>
-							</ListItemIcon>
-							<ListItemText primary="Locate Tweets"/>
-						</ListItemButton>
-					</ListItem>	
+          <ListItem>
+            <ListItemButton selected={true}>
+              <ListItemIcon>
+                <Public/>
+              </ListItemIcon>
+              <ListItemText primary="Locate Tweets"/>
+            </ListItemButton>
+          </ListItem>	
         </List>
       </Drawer>
       <MapRenderer/>
