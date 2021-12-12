@@ -67,4 +67,4 @@ export const LocationSearch = (props)  => {
         </LoadingButton>
 		</div>
 	);
-}
+};
