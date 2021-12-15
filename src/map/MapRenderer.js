@@ -29,7 +29,7 @@ export const MapRenderer = (props) => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <FlyToRenderer flyTo={flyTo}/>
-        <PointRenderer points={points}/>
+        <PointRenderer features={points}/>
       </MapContainer>
     </div>
   );

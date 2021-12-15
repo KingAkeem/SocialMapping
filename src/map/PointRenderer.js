@@ -1,24 +1,15 @@
 import { Popup, Marker } from 'react-leaflet';
 
-const filterPoint = (point) => {
-  switch (point.originType) {
-    case 'twitter':
-      return point.place && point.place.coordinates && point.place.coordinates.length === 2;
-    default:
-      return false;
-  }
-};
-
 export const PointRenderer = (props) => {
-  const { points } = props;
+  const { features } = props;
   return (
     <>
-      {points.length && points.filter(point => filterPoint(point)).map((point, index) => {
+      {features.length && features.map((feature, index) => {
         return (
-          <Marker key={index} position={point.place.coordinates}>
+          <Marker key={index} position={feature.geometry.coordinates}>
             <Popup>
-              {Object.keys(point).filter(key => typeof point[key] === 'string').map(key => {
-                return ( <div key={key}> <b>{key.toUpperCase()}</b> {point[key]} <br/> </div>);
+              {Object.keys(feature.properties).filter(key => typeof feature.properties[key] === 'string').map(key => {
+                return ( <div key={key}> <b>{key.toUpperCase()}</b> {feature.properties[key]} <br/> </div>);
               })}
             </Popup>
           </Marker>

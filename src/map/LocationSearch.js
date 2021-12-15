@@ -10,11 +10,8 @@ async function getTweets(city, distance, signal) {
    * Add validation for distance (validate distance is actually a positive number within a reasonable limit)
    */
   const response = await fetch(`http://localhost:5000/search/tweets?city=${city}&distance=${distance}`, { signal });
-  const {origin, tweets} = await response.json();
-  return {origin, tweets: tweets.map(tweet => {
-    tweet.originType = 'twitter';
-    return tweet;
-  })};
+  const {origin, points} = await response.json();
+  return {origin, points};
 }
 
 const isDistanceValid = distance =>isNaN(parseFloat(distance)) || parseFloat(distance) < 0;
@@ -27,9 +24,9 @@ export const LocationSearch = (props)  => {
   const { run: search, isPending } = useAsync({
     deferFn: ([city, distance], {signal}) => getTweets(city, distance, signal),
     onResolve: (tweetResponse) => {
-      const {origin, tweets} = tweetResponse;
+      const {origin, points} = tweetResponse;
       setAddressErr("");
-      props.onSearch({ origin, points: tweets });
+      props.onSearch({ origin, points });
       
     },
     onReject: (error) => {
@@ -62,9 +59,9 @@ export const LocationSearch = (props)  => {
         onClick={handleSearch}
         loading={isPending}
         endIcon={<Search/>}
-        loadingPosiition="end">
+        loadingPosition="end">
           Search
-        </LoadingButton>
+      </LoadingButton>
     </div>
   );
 };
