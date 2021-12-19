@@ -4,7 +4,7 @@ export const PointRenderer = (props) => {
   const { features } = props;
   return (
     <>
-      {features.length && features.map((feature, index) => {
+      {features && features.length && features.map((feature, index) => {
         return (
           <Marker key={index} position={feature.geometry.coordinates}>
             <Popup>

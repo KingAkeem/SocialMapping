@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAsync } from 'react-async';
 import { LoadingButton } from '@mui/lab';
 import { Search } from '@mui/icons-material';
-import { TextField } from '@mui/material';
+import { TextField, Button } from '@mui/material';
 
 async function getTweets(city, distance, signal) {
   /**
@@ -10,12 +10,12 @@ async function getTweets(city, distance, signal) {
    * Add validation for distance (validate distance is actually a positive number within a reasonable limit)
    */
   const response = await fetch(`http://localhost:5000/search/tweets?city=${city}&distance=${distance}`, { signal });
-  const {origin, points} = await response.json();
-  return {origin, points};
+  const {origin, features} = await response.json();
+  return {origin, features};
 }
 
 const isDistanceValid = distance =>isNaN(parseFloat(distance)) || parseFloat(distance) < 0;
-export const LocationSearch = (props)  => {
+export const Toolbar = (props)  => {
   const [address, setAddress] = useState(props.location); 
   const [addressErr, setAddressErr] = useState("");
 
@@ -24,9 +24,9 @@ export const LocationSearch = (props)  => {
   const { run: search, isPending } = useAsync({
     deferFn: ([city, distance], {signal}) => getTweets(city, distance, signal),
     onResolve: (tweetResponse) => {
-      const {origin, points} = tweetResponse;
+      const {origin, features} = tweetResponse;
       setAddressErr("");
-      props.onSearch({ origin, points });
+      props.onSearch({ origin, features });
       
     },
     onReject: (error) => {
@@ -41,7 +41,8 @@ export const LocationSearch = (props)  => {
   };
 
   return (
-    <div style={{ height: '10vh', marginTop: '1rem'}}>
+    <div style={{ height: '4.9rem', marginTop: '1rem'}}>
+      <Button onClick={() => props.onMenuClick()}>Open Menu</Button>
       <TextField
         label='Address'
         error={addressErr !== ""}
